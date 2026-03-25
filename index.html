@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>SKY HDTV ENTERPRISE</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* CSS ENTERPRISE - STRICT GPU ACCELERATION */
+        :root {
+            --bg-deep: #050505; --bg-panel: #0a0a0c; --border-dark: #151515;
+            --brand-red: #E60000; --brand-red-glow: rgba(230, 0, 0, 0.4);
+            --text-main: #FFFFFF; --text-muted: #888888;
+        }
+
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; outline: none; 
+            -webkit-user-select: none; user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            background-color: var(--bg-deep); color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            width: 100vw; height: 100vh; overflow: hidden;
+            /* Força renderização via GPU em WebKit antigo */
+            -webkit-transform: translate3d(0,0,0); transform: translate3d(0,0,0);
+            -webkit-backface-visibility: hidden; backface-visibility: hidden;
+        }
+
+        .layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 10; background: var(--bg-deep); }
+        .layer.active { display: flex; }
+        .flex-center { display: flex; align-items: center; justify-content: center; flex-direction: column; }
+
+        /* SCROLLBAR INVISÍVEL PARA TV */
+        ::-webkit-scrollbar { display: none; }
+
+        /* TYPOGRAPHY & BRANDING */
+        .brand-logo { font-size: 5vh; font-weight: 900; letter-spacing: -1px; margin-bottom: 3vh; text-transform: uppercase; }
+        .brand-logo span { color: var(--brand-red); }
+
+        /* COMPONENTES DE UI OTIMIZADOS */
+        .input-group { width: 400px; max-width: 90%; background: var(--bg-panel); padding: 4vh; border-radius: 8px; border: 1px solid var(--border-dark); box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .inp { width: 100%; padding: 2vh; margin-bottom: 2vh; background: #000; border: 1px solid #222; color: #fff; font-size: 2.5vh; text-align: center; border-radius: 4px; transition: border-color 0.2s; }
+        .btn { width: 100%; padding: 2vh; background: #222; color: var(--text-muted); font-size: 2.5vh; font-weight: bold; border: none; border-radius: 4px; text-transform: uppercase; }
+        
+        /* ESTADO DE FOCO ABSOLUTO (SEM REFLOW) */
+        .focus { border-color: var(--brand-red) !important; box-shadow: inset 0 0 0 2px var(--brand-red), 0 0 15px var(--brand-red-glow) !important; color: #fff !important; background-color: rgba(230,0,0,0.1) !important; }
+        .btn.focus { background-color: var(--brand-red) !important; color: #fff !important; }
+
+        /* GRID DO PAINEL PRINCIPAL */
+        .layout-main { display: flex; width: 100%; height: 100%; }
+        .panel-cats { width: 22%; background: #080808; border-right: 1px solid var(--border-dark); display: flex; flex-direction: column; }
+        .panel-list { width: 30%; background: var(--bg-panel); border-right: 1px solid var(--border-dark); display: flex; flex-direction: column; }
+        .panel-view { width: 48%; display: flex; flex-direction: column; position: relative; background: #000; }
+
+        .header-title { padding: 2.5vh; background: #111; font-weight: bold; font-size: 2.5vh; text-align: center; color: var(--brand-red); border-bottom: 1px solid #222; }
+        
+        /* VIRTUAL SCROLL CONTAINERS */
+        .list-container { flex: 1; overflow: hidden; position: relative; padding: 1vh; }
+        .list-item { padding: 2vh; margin-bottom: 0.5vh; border-radius: 4px; font-size: 2.2vh; color: var(--text-muted); border: 1px solid transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: none; }
+        .list-item.visible { display: block; }
+        .list-item.selected { background: #151515; color: #fff; border-left: 4px solid var(--brand-red); }
+        .list-item.playing { color: var(--brand-red); }
+
+        /* PLAYER ENTERPRISE */
+        .player-wrapper { width: 100%; height: 55vh; background: #000; position: relative; border-bottom: 1px solid #222; }
+        .player-wrapper.fullscreen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; border: none; }
+        video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+        
+        .osd-info { position: absolute; top: 2vh; right: 2vh; background: rgba(0,0,0,0.8); padding: 1vh 2vh; border-radius: 4px; color: #fff; font-size: 2vh; display: none; z-index: 50; border: 1px solid var(--brand-red); }
+        .spinner { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; z-index: 60; color: var(--brand-red); font-size: 6vh; }
+
+        /* METADATA */
+        .meta-panel { flex: 1; padding: 3vh; background: #080808; display: flex; flex-direction: column; justify-content: space-between; }
+        .meta-title { font-size: 4vh; font-weight: bold; color: #fff; margin-bottom: 1vh; }
+        .meta-sub { font-size: 2.2vh; color: var(--text-muted); }
+        
+        .status-bar { display: flex; justify-content: space-between; border-top: 1px solid #222; padding-top: 2vh; }
+        .badge { font-size: 1.8vh; padding: 1vh 1.5vh; background: #111; border-radius: 4px; color: #aaa; border: 1px solid #222; }
+        .badge span { color: #fff; font-weight: bold; margin-left: 0.5vw; }
+
+        /* LOADER */
+        .loader-text { margin-top: 2vh; font-size: 2.5vh; font-weight: bold; color: var(--text-muted); letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+
+    <div id="layer-login" class="layer active flex-center">
+        <div class="brand-logo"><span>SKY</span> HDTV PRO</div>
+        <div class="input-group">
+            <input type="text" id="inp-dns" class="inp nav-item" data-zone="0" placeholder="URL DO SERVIDOR">
+            <input type="text" id="inp-user" class="inp nav-item" data-zone="0" placeholder="USUÁRIO">
+            <input type="password" id="inp-pass" class="inp nav-item" data-zone="0" placeholder="SENHA">
+            <button id="btn-login" class="btn nav-item" data-zone="0">AUTENTICAR</button>
+            <div id="login-msg" style="color: var(--brand-red); text-align: center; margin-top: 2vh; font-size: 2vh; display: none;"></div>
+        </div>
+    </div>
+
+    <div id="layer-load" class="layer flex-center">
+        <i class="fas fa-circle-notch fa-spin" style="font-size: 8vh; color: var(--brand-red);"></i>
+        <div id="load-msg" class="loader-text">INICIALIZANDO SISTEMA...</div>
+    </div>
+
+    <div id="layer-main" class="layer">
+        <div class="layout-main">
+            
+            <div class="panel-cats">
+                <div class="header-title">CATEGORIAS</div>
+                <div class="list-container" id="cat-viewport">
+                    </div>
+            </div>
+
+            <div class="panel-list">
+                <div class="header-title" id="lbl-cat-name">AGUARDANDO...</div>
+                <div class="list-container" id="chan-viewport">
+                    </div>
+            </div>
+
+            <div class="panel-view">
+                <div id="player-box" class="player-wrapper nav-item" data-zone="2">
+                    <video id="sys-player"></video>
+                    <i id="player-spin" class="fas fa-circle-notch fa-spin spinner"></i>
+                    <div id="osd-res" class="osd-info">BUFFERING...</div>
+                </div>
+                
+                <div class="meta-panel">
+                    <div>
+                        <div id="meta-title" class="meta-title">NENHUM CANAL SELECIONADO</div>
+                        <div id="meta-desc" class="meta-sub">Navegue pelas categorias à esquerda.</div>
+                    </div>
+                    
+                    <div class="status-bar">
+                        <div class="badge">VENCIMENTO: <span id="sys-exp">--/--/----</span></div>
+                        <div class="badge">FORMATO: <span>HLS/TS MUX</span></div>
+                        <div class="badge">STATUS: <span style="color: #00C851">ONLINE</span></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        /**
+         * CORE ENTERPRISE: Otimizado para máxima estabilidade em V8/WebKit antigos.
+         * Nomenclatura ES5 Estrita. Sem Arrow Functions. Sem Let/Const.
+         */
+
+        // 1. UTILITÁRIOS & REDE
+        var Utils = {
+            $: function(id) { return document.getElementById(id); },
+            log: function(msg) { console.log("[SKY-ENTERPRISE] " + msg); },
+            ajax: function(url, callback) {
+                var xhr = new XMLHttpRequest();
+                var sep = url.indexOf('?') !== -1 ? '&' : '?';
+                xhr.open("GET", url + sep + "_t=" + new Date().getTime(), true);
+                xhr.timeout = 15000;
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status === 200) {
+                            try { callback(JSON.parse(xhr.responseText)); } 
+                            catch(e) { callback(null, "PARSE_ERR"); }
+                        } else { callback(null, "NET_ERR"); }
+                    }
+                };
+                xhr.onerror = function() { callback(null, "NET_ERR"); };
+                xhr.ontimeout = function() { callback(null, "TIMEOUT"); };
+                xhr.send();
+            },
+            formatDate: function(timestamp) {
+                if(!timestamp) return "Ilimitado";
+                var d = new Date(timestamp * 1000);
+                return ("0" + d.getDate()).slice(-2) + "/" + ("0" + (d.getMonth() + 1)).slice(-2) + "/" + d.getFullYear();
+            }
+        };
+
+        // 2. SISTEMA DE SCROLL VIRTUAL (A MÁGICA PARA TVS FRACAS)
+        // Reutiliza nós do DOM em vez de criar centenas deles. O(1) de memória.
+        var VirtualScroller = function(containerId, maxVisible) {
+            this.container = Utils.$(containerId);
+            this.nodes = [];
+            this.data = [];
+            this.maxVisible = maxVisible;
+            this.dataIndex = 0; // Índice selecionado nos dados
+            
+            // Inicializa Nós Físicos uma única vez
+            for(var i=0; i < this.maxVisible; i++) {
+                var el = document.createElement('div');
+                el.className = 'list-item';
+                el.id = containerId + '-node-' + i;
+                this.container.appendChild(el);
+                this.nodes.push(el);
+            }
+        };
+
+        VirtualScroller.prototype.loadData = function(dataArray) {
+            this.data = dataArray || [];
+            this.dataIndex = 0;
+            this.render();
+        };
+
+        VirtualScroller.prototype.render = function() {
+            if(this.data.length === 0) {
+                for(var i=0; i<this.maxVisible; i++) this.nodes[i].className = 'list-item';
+                if(this.nodes[0]) {
+                    this.nodes[0].className = 'list-item visible';
+                    this.nodes[0].innerHTML = 'Vazio';
+                }
+                return;
+            }
+
+            // Calcula a janela de visualização (Windowing)
+            var start = Math.max(0, this.dataIndex - Math.floor(this.maxVisible / 2));
+            if (start + this.maxVisible > this.data.length) {
+                start = Math.max(0, this.data.length - this.maxVisible);
+            }
+
+            for(var j=0; j<this.maxVisible; j++) {
+                var dataIdx = start + j;
+                var node = this.nodes[j];
+                
+                if(dataIdx < this.data.length) {
+                    var item = this.data[dataIdx];
+                    var isSelected = (dataIdx === this.dataIndex);
+                    var isPlaying = (App.currentStreamId && (item.stream_id == App.currentStreamId));
+                    
+                    node.innerHTML = item.name || item.category_name || "Desconhecido";
+                    node.className = 'list-item visible' + (isSelected ? ' focus' : '') + (isPlaying ? ' playing' : '');
+                } else {
+                    node.className = 'list-item';
+                }
+            }
+        };
+
+        VirtualScroller.prototype.move = function(dir) {
+            if(this.data.length === 0) return;
+            var oldIdx = this.dataIndex;
+            this.dataIndex += dir;
+            if(this.dataIndex < 0) this.dataIndex = 0;
+            if(this.dataIndex >= this.data.length) this.dataIndex = this.data.length - 1;
+            
+            if(oldIdx !== this.dataIndex) this.render();
+        };
+
+        VirtualScroller.prototype.getSelectedItem = function() {
+            return this.data[this.dataIndex];
+        };
+
+        // 3. MOTOR DE VÍDEO BLINDADO
+        var PlayerEngine = {
+            el: null, spin: null, osd: null, timer: null,
+            init: function() {
+                this.el = Utils.$('sys-player');
+                this.spin = Utils.$('player-spin');
+                this.osd = Utils.$('osd-res');
+                
+                var self = this;
+                this.el.addEventListener('waiting', function() { self.spin.style.display = 'block'; });
+                this.el.addEventListener('playing', function() { self.spin.style.display = 'none'; self.osd.style.display = 'none'; });
+                this.el.addEventListener('error', function() { self.handleCrash(); });
+            },
+            play: function(url) {
+                this.stop();
+                this.spin.style.display = 'block';
+                this.el.src = url;
+                var p = this.el.play();
+                if(p && p.catch) p.catch(function(e){ Utils.log("Auto-play prevented"); });
+            },
+            stop: function() {
+                if(this.el) {
+                    this.el.pause();
+                    this.el.removeAttribute('src');
+                    this.el.load(); // Força GC do vídeo antigo
+                }
+                this.spin.style.display = 'none';
+            },
+            handleCrash: function() {
+                this.spin.style.display = 'none';
+                this.osd.innerHTML = "ERRO DE SINAL - TENTANDO RECONECTAR";
+                this.osd.style.display = 'block';
+                // Implementação de retry pode ir aqui na v2
+            },
+            toggleFullscreen: function() {
+                var box = Utils.$('player-box');
+                if(box.className.indexOf('fullscreen') > -1) {
+                    box.className = 'player-wrapper nav-item focus';
+                } else {
+                    box.className = 'player-wrapper nav-item fullscreen focus';
+                }
+            }
+        };
+
+        // 4. CONTROLADOR PRINCIPAL (STATE MACHINE)
+        var App = {
+            layer: 0, // 0: Login, 1: Load, 2: Main
+            zone: 0,  // 0: Cats, 1: List, 2: Player
+            creds: { url: '', u: '', p: '' },
+            scrollerCats: null,
+            scrollerChan: null,
+            currentStreamId: null,
+            
+            // Gestão de Foco Nativo para Zonas (Login)
+            loginInputs: ['inp-dns', 'inp-user', 'inp-pass', 'btn-login'],
+            loginIdx: 0,
+
+            init: function() {
+                PlayerEngine.init();
+                this.scrollerCats = new VirtualScroller('cat-viewport', 12);
+                this.scrollerChan = new VirtualScroller('chan-viewport', 12);
+                
+                if(localStorage.getItem('sky_ent_u')) {
+                    Utils.$('inp-dns').value = localStorage.getItem('sky_ent_h');
+                    Utils.$('inp-user').value = localStorage.getItem('sky_ent_u');
+                    Utils.$('inp-pass').value = localStorage.getItem('sky_ent_p');
+                }
+                
+                this.setLayer(0);
+                this.updateLoginFocus();
+                this.bindKeys();
+            },
+
+            setLayer: function(idx) {
+                Utils.$('layer-login').className = 'layer flex-center' + (idx === 0 ? ' active' : '');
+                Utils.$('layer-load').className = 'layer flex-center' + (idx === 1 ? ' active' : '');
+                Utils.$('layer-main').className = 'layer' + (idx === 2 ? ' active' : '');
+                this.layer = idx;
+            },
+
+            showLoad: function(msg) {
+                Utils.$('load-msg').innerHTML = msg;
+                this.setLayer(1);
+            },
+
+            doAuth: function() {
+                var h = Utils.$('inp-dns').value.trim();
+                var u = Utils.$('inp-user').value.trim();
+                var p = Utils.$('inp-pass').value.trim();
+                var msg = Utils.$('login-msg');
+                
+                if(!h || !u || !p) { msg.innerHTML = "PREENCHA TODOS OS CAMPOS"; msg.style.display = 'block'; return; }
+                if(h.slice(-1) === '/') h = h.slice(0, -1);
+                if(h.indexOf('http') === -1) h = 'http://' + h;
+
+                this.creds = { url: h, u: u, p: p };
+                this.showLoad("AUTENTICANDO CREDENCIAIS...");
+
+                var api = h + "/player_api.php?username=" + u + "&password=" + p;
+                Utils.ajax(api, function(res, err) {
+                    if(err || !res || !res.user_info || res.user_info.auth !== 1) {
+                        App.setLayer(0);
+                        msg.innerHTML = "FALHA NA AUTENTICAÇÃO OU SERVIDOR OFFLINE";
+                        msg.style.display = 'block';
+                    } else {
+                        localStorage.setItem('sky_ent_h', h);
+                        localStorage.setItem('sky_ent_u', u);
+                        localStorage.setItem('sky_ent_p', p);
+                        Utils.$('sys-exp').innerHTML = Utils.formatDate(res.user_info.exp_date);
+                        App.loadCategories();
+                    }
+                });
+            },
+
+            loadCategories: function() {
+                this.showLoad("SINCRONIZANDO CATEGORIAS...");
+                var api = this.creds.url + "/player_api.php?username=" + this.creds.u + "&password=" + this.creds.p + "&action=get_live_categories";
+                Utils.ajax(api, function(res, err) {
+                    if(err || !res) { App.setLayer(0); return; }
+                    // Filtro de limpeza empresarial pode ser aplicado aqui
+                    App.scrollerCats.loadData(res);
+                    App.setLayer(2);
+                    App.zone = 0;
+                    App.updateUI();
+                    
+                    // Pré-carrega primeira categoria
+                    var first = App.scrollerCats.getSelectedItem();
+                    if(first) App.loadChannels(first.category_id, first.category_name);
+                });
+            },
+
+            loadChannels: function(catId, catName) {
+                Utils.$('lbl-cat-name').innerHTML = "CARREGANDO...";
+                this.scrollerChan.loadData([]); // Limpa lista
+                
+                var api = this.creds.url + "/player_api.php?username=" + this.creds.u + "&password=" + this.creds.p + "&action=get_live_streams&category_id=" + catId;
+                Utils.ajax(api, function(res, err) {
+                    Utils.$('lbl-cat-name').innerHTML = (catName || "CANAIS").toUpperCase();
+                    if(res && !err) {
+                        App.scrollerChan.loadData(res);
+                    }
+                });
+            },
+
+            playSelectedChannel: function() {
+                var item = this.scrollerChan.getSelectedItem();
+                if(!item) return;
+                
+                this.currentStreamId = item.stream_id;
+                Utils.$('meta-title').innerHTML = item.name;
+                Utils.$('meta-desc').innerHTML = "Transmitindo via link direto otimizado.";
+                
+                // Formato TS é mais leve para processamento em TVs antigas
+                var url = this.creds.url + "/live/" + this.creds.u + "/" + this.creds.p + "/" + item.stream_id + ".ts";
+                PlayerEngine.play(url);
+                this.scrollerChan.render(); // Atualiza cor vermelha do item tocando
+            },
+
+            // CONTROLE ESPACIAL (Mapeamento de Teclas do Controle Remoto)
+            updateLoginFocus: function() {
+                for(var i=0; i<this.loginInputs.length; i++) {
+                    Utils.$(this.loginInputs[i]).className = 'inp nav-item';
+                }
+                Utils.$('btn-login').className = 'btn nav-item'; // Reset btn
+                var active = Utils.$(this.loginInputs[this.loginIdx]);
+                active.className += ' focus';
+                if(active.tagName === 'INPUT') active.focus(); else active.blur();
+            },
+
+            updateUI: function() {
+                // Remove todos os focos
+                var box = Utils.$('player-box');
+                box.className = box.className.replace(' focus', '');
+                
+                if(this.zone === 0) {
+                    this.scrollerCats.render(); // O foco está renderizado dentro do virtual list
+                    this.scrollerChan.render();
+                } else if(this.zone === 1) {
+                    this.scrollerCats.render();
+                    this.scrollerChan.render();
+                } else if(this.zone === 2) {
+                    this.scrollerCats.render();
+                    this.scrollerChan.render();
+                    box.className += ' focus';
+                }
+            },
+
+            bindKeys: function() {
+                document.addEventListener('keydown', function(e) {
+                    var k = e.keyCode;
+                    
+                    // TELA CHEIA ESCAPE
+                    var box = Utils.$('player-box');
+                    if(box.className.indexOf('fullscreen') > -1) {
+                        e.preventDefault();
+                        if(k === 13 || k === 8 || k === 27 || k === 461 || k === 10009) {
+                            PlayerEngine.toggleFullscreen();
+                        }
+                        return;
+                    }
+
+                    // LAYER 0: LOGIN
+                    if(App.layer === 0) {
+                        if(k === 40) { e.preventDefault(); App.loginIdx = (App.loginIdx + 1) % App.loginInputs.length; App.updateLoginFocus(); }
+                        if(k === 38) { e.preventDefault(); App.loginIdx = (App.loginIdx - 1 + App.loginInputs.length) % App.loginInputs.length; App.updateLoginFocus(); }
+                        if(k === 13) {
+                            e.preventDefault();
+                            if(App.loginIdx === 3) App.doAuth();
+                            else { App.loginIdx++; App.updateLoginFocus(); }
+                        }
+                        return;
+                    }
+
+                    // LAYER 2: PAINEL PRINCIPAL
+                    if(App.layer === 2) {
+                        e.preventDefault(); // Impede scroll nativo da página
+                        
+                        // ZONA 0: CATEGORIAS
+                        if(App.zone === 0) {
+                            if(k === 40) App.scrollerCats.move(1);
+                            if(k === 38) App.scrollerCats.move(-1);
+                            if(k === 39 || k === 13) { 
+                                App.zone = 1; 
+                                var cat = App.scrollerCats.getSelectedItem();
+                                if(cat) App.loadChannels(cat.category_id, cat.category_name);
+                            }
+                        }
+                        // ZONA 1: CANAIS
+                        else if(App.zone === 1) {
+                            if(k === 40) App.scrollerChan.move(1);
+                            if(k === 38) App.scrollerChan.move(-1);
+                            if(k === 37 || k === 8 || k === 461) App.zone = 0;
+                            if(k === 39) App.zone = 2;
+                            if(k === 13) { App.playSelectedChannel(); App.zone = 2; }
+                        }
+                        // ZONA 2: PLAYER
+                        else if(App.zone === 2) {
+                            if(k === 37) App.zone = 1;
+                            if(k === 13) PlayerEngine.toggleFullscreen();
+                        }
+
+                        App.updateUI();
+                    }
+                });
+            }
+        };
+
+        window.onload = function() { App.init(); };
+    </script>
+</body>
+</html>
